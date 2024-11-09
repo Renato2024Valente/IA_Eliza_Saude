@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IA de Consulta de Saúde - Debug</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            width: 300px;
+        }
+        .mic-button {
+            font-size: 24px;
+            cursor: pointer;
+            background-color: transparent;
+            border: none;
+            color: #007bff;
+            outline: none;
+            margin-top: 10px;
+        }
+        .mic-button:active {
+            color: red;
+        }
+        #status {
+            font-size: 14px;
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>IA de Consulta de Saúde</h2>
+        <p>Pressione e segure o botão de microfone para fazer uma pergunta.</p>
+        
+        <!-- Botão para gravar áudio -->
+        <button class="mic-button" onmousedown="iniciarGravacao()" onmouseup="pararGravacao()">🎤</button>
+        
+        <div id="status">Aguardando...</div>
+        <div id="resposta-ia" style="margin-top: 10px;"></div>
+    </div>
+
+    <script>
+        let recognition;
+        const synth = window.speechSynthesis;
+        let isRecording = false;
+
+        // Verificar suporte para reconhecimento de voz
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.interimResults = false;
+            recognition.continuous = false;
+
+            // Evento disparado quando o reconhecimento de voz é concluído
+            recognition.onresult = (event) => {
+                const pergunta = event.results[0][0].transcript.toLowerCase().trim();
+                console.log("Texto capturado:", pergunta);  // Log no console para depuração
+                document.getElementById('status').innerText = "Pergunta capturada: " + pergunta;
+                responderPergunta(pergunta); // Responder com áudio
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Erro no reconhecimento de voz:", event.error);
+                document.getElementById('status').innerText = "Erro no reconhecimento de voz";
+            };
+        } else {
+            alert("Seu navegador não suporta reconhecimento de voz. Tente usar o Chrome ou Edge.");
+        }
+
+        function iniciarGravacao() {
+            if (recognition && !isRecording) {
+                recognition.start();
+                isRecording = true;
+                document.getElementById('status').innerText = "Gravando... solte para finalizar.";
+            }
+        }
+
+        function pararGravacao() {
+            if (recognition && isRecording) {
+                recognition.stop();
+                isRecording = false;
+                document.getElementById('status').innerText = "Processando pergunta...";
+            }
+        }
+
+        function responderPergunta(pergunta) {
+            let resposta = "Desculpe, não entendi sua pergunta.";
+
+            // Respostas para saudações e apresentação
+            if (/bom dia|boa tarde|boa noite/.test(pergunta)) {
+                resposta = "Olá! Meu nome é IA Eliza Inteligencia Artificial. Como posso ajudar você? Se precisar de assistência de emergência, diga 'socorro' ou 'emergência'. " +
+                           "Para emergências específicas, você pode ligar para: Bombeiros no 193, SAMU no 192, ou Polícia no 190.";
+            } else if (/socorro|emergência|emergencia/.test(pergunta)) {
+                resposta = "Para emergências: Bombeiros ligue 193, SAMU ligue 192, e Polícia ligue 190. Estou aqui para ajudar com dúvidas de saúde.";
+            }
+            // Respostas para sintomas específicos com informações adicionais contextuais
+            else if (/dor no peito/.test(pergunta)) {
+                resposta = "Dor no peito pode ser um sinal de infarto. Se a dor for intensa ou persistente, procure atendimento médico imediatamente.";
+            } else if (/dor no braço direito/.test(pergunta)) {
+                resposta = "Desconforto ou dor no braço direito, especialmente se acompanhado de dor no peito, pode ser indicativo de infarto. Consulte um médico rapidamente.";
+            } else if (/dor de cabeça/.test(pergunta)) {
+                resposta = "Dores de cabeça podem ter várias causas, como enxaqueca ou problemas neurológicos. Se a dor for persistente, procure um médico.";
+            } else if (/pressão alta/.test(pergunta)) {
+                resposta = "A pressão alta aumenta o risco de AVC. É importante monitorar regularmente e buscar ajuda médica. A pressão arterial ideal é abaixo de 120/80 mmHg.";
+            } else if (/pressão baixa/.test(pergunta)) {
+                resposta = "Pressão baixa pode causar tonturas e, em casos graves, risco de desmaio ou até infarto. A pressão arterial ideal é 120/80 mmHg.";
+            }
+
+            // Exibir e falar a resposta
+            document.getElementById('resposta-ia').innerText = resposta;
+            falarTexto(resposta); // Responder em áudio
+        }
+
+        function falarTexto(texto) {
+            if (synth && !synth.speaking) {
+                const utterance = new SpeechSynthesisUtterance(texto);
+                utterance.lang = 'pt-BR';
+                synth.speak(utterance);
+            } else if (!synth) {
+                alert("Seu navegador não suporta síntese de voz.");
+            }
+        }
+    </script>
+</body>
+</html>
